@@ -16,10 +16,22 @@ const authReducer = (state, action) => {
         ...state,
         errorMessage: "",
       };
+    case "signout": 
+      return {token: null, errorMessage: ''}
     default:
       return state;
   }
 };
+
+const tryLocalSignin = dispatch => async () => {
+  const token = await AsyncStorage.getItem('token')
+  if (token) {
+    dispatch({ type: "signin", payload: token });
+    navigate("TrackList");
+  } else {
+    navigate("Signup")
+  }
+}
 
 //define action functions (called with dispatch) intented to modify our state
 const signup =
@@ -48,6 +60,7 @@ const signin =
   async ({ email, password }) => {
     try {
       const response = await trackerApi.post("/signin", { email, password });
+      console.log(response.data)
       await AsyncStorage.setItem("token", response.data.token);
       dispatch({ type: "signin", payload: response.data.token });
       navigate("TrackList");
@@ -60,10 +73,16 @@ const signin =
     }
   };
 
+  const signout = dispatch => async() => {
+    await AsyncStorage.removeItem('token')
+    dispatch({type:'signout'})
+    navigate('loginFlows')
+  }
+
 //export customized Provider and Context
 
 export const { Context, Provider } = createDataContext(
   authReducer,
-  { signup, signin, clearErrorMessage },
+  { signup, signin, clearErrorMessage, tryLocalSignin, signout },
   { token: null, errorMessage: "" }
 );
